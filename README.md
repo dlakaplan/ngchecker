@@ -20,3 +20,4 @@
 
 Note that `ParChecker` can include `BinaryChecker` and `NameChecker` as sub-checks, or they can be run separately.
 
+Can raise exception on failure or just issue a warning.

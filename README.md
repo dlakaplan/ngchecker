@@ -21,3 +21,27 @@
 Note that `ParChecker` can include `BinaryChecker` and `NameChecker` as sub-checks, or they can be run separately.
 
 Can raise exception on failure or just issue a warning.
+
+Usage:
+```
+from pint.models import get_model_and_toas
+import pint.logging
+import ngchecker
+
+pint.logging.setup("INFO")
+
+m, t = get_model_and_toas(
+    "J1125+7819_PINT_20250404.nb.par",
+    "J1125+7819_PINT_20250411.nb.tim",
+    usepickle=True,
+)
+
+jc = JumpChecker(m, t)
+jc.check(keys=[("f"), ("fe", "be")])
+
+pc = ngchecker.ParChecker(m, t)
+pc.check()
+
+tc = ngchecker.TOAChecker(m, t)
+tc.check(version="2025.02.05-1fb9ef4.01.31-08c1687")
+```

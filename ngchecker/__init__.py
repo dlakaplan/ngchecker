@@ -309,7 +309,7 @@ class ParChecker(DataChecker):
 
     def check(
         self,
-        required: List[str] = ["PX", "ELONG", "ELAT", "PMELONG", "PMELAT"],
+        required: List[str] = ["F0", "F1", "PX", "ELONG", "ELAT", "PMELONG", "PMELAT"],
         excluded: List[str] = ["F2"],
         required_value: Dict = {
             "PLANET_SHAPIRO": True,

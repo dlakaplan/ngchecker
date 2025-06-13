@@ -40,8 +40,15 @@ jc = JumpChecker(m, t)
 jc.check(keys=[("f"), ("fe", "be")])
 
 pc = ngchecker.ParChecker(m, t)
-pc.check()
+pc.check(required=["F0", "F1", "PX", "ELONG", "ELAT", "PMELONG", "PMELAT"],
+         excluded=["F2"],
+         required_value={
+            "PLANET_SHAPIRO": True,
+            "EPHEM": "DE440",
+            "CLOCK": "TT(BIPM2023)",
+            "CORRECT_TROPOSPHERE": True,
+        })
 
 tc = ngchecker.TOAChecker(m, t)
-tc.check(version="2025.02.05-1fb9ef4.01.31-08c1687")
+tc.check(version="2025.02.05-1fb9ef4.01.31-08c1687", badranges={"PUPPI": [57984, 58447]},)
 ```

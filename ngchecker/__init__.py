@@ -80,6 +80,43 @@ class DataChecker:
                 return False
         return True
 
+    def check_parameter_set(
+        self,
+        p: List[str],
+        raiseexcept: Optional[bool] = True,
+        require_unfrozen: Optional[bool] = True,
+    ) -> bool:
+        """
+        Check for the existence of a set of parameter, optionally they must be unfrozen
+
+        Parameters
+        ----------
+        p : list of str
+            Parameter names
+        raiseexcept: bool, optional
+            Will an error raise an exception (default) or just a warning
+        require_unfrozen: bool, optional
+            Should they also be unfrozen?
+
+        Returns
+        -------
+        bool
+            True if the checks pass, False otherwise
+
+        Raises
+        ------
+        KeyError
+            If the check fails and ``raiseexcept`` is True
+        """
+        return all(
+            [
+                self.check_parameter(
+                    p, raiseexcept=raiseexcept, require_unfrozen=require_unfrozen
+                )
+                for x in p
+            ]
+        )
+
     def check_optional_parameter_sets(
         self,
         p: List[str],
@@ -200,11 +237,11 @@ class ELL1Checker(DataChecker):
             If the check fails and ``raiseexcept`` is True
         """
 
-        value = True
-        for p in ["A1", "TASC", "EPS1", "EPS2", "A1DOT"]:
-            value = value and self.check_parameter(
-                p, raiseexcept=raiseexcept, require_unfrozen=True
-            )
+        value = self.check_parameter_set(
+            ["A1", "TASC", "EPS1", "EPS2", "A1DOT"],
+            raiseexcept=raiseexcept,
+            require_unfrozen=True,
+        )
         if "PB" in self.m.params:
             for p in ["PBDOT"]:
                 value = value and self.check_parameter(
@@ -249,11 +286,11 @@ class ELL1HChecker(DataChecker):
             If the check fails and ``raiseexcept`` is True
         """
 
-        value = True
-        for p in ["A1", "TASC", "EPS1", "EPS2", "A1DOT", "H3", "PBDOT"]:
-            value = value and self.check_parameter(
-                p, raiseexcept=raiseexcept, require_unfrozen=True
-            )
+        value = self.check_parameter_set(
+            ["A1", "TASC", "EPS1", "EPS2", "A1DOT", "H3", "PBDOT"],
+            raiseexcept=raiseexcept,
+            require_unfrozen=True,
+        )
         value = value and self.check_optional_parameter_sets(
             ["EPS1DOT", "EPS2DOT"], raiseexcept=raiseexcept, require_unfrozen=True
         )
@@ -344,18 +381,16 @@ class ParChecker(DataChecker):
         KeyError
             If the check fails and ``raiseexcept`` is True
         """
-        for p in required:
-            value = self.check_parameter(
-                p, raiseexcept=raiseexcept, require_unfrozen=True
-            )
-            if not value:
-                return value
-        for p in required_value.keys():
-            value = self.check_parameter(
-                p, raiseexcept=raiseexcept, require_unfrozen=False
-            )
-            if not value:
-                return value
+        value = self.check_parameter_set(
+            required, raiseexcept=raiseexcept, require_unfrozen=True
+        )
+        if not value:
+            return value
+        value = self.check_parameter_set(
+            required_value.keys(), raiseexcept=raiseexcept, require_unfrozen=False
+        )
+        if not value:
+            return value
         for p in excluded:
             if p in self.m.params and self.m[p].value is not None:
                 self.raise_or_warn(

@@ -6,6 +6,37 @@ import pint.models
 import pint.toa
 from loguru import logger as log
 
+# these can be set elsewhere or overridden if needed
+binary_params = {
+    "ELL1": {
+        "all": {
+            "required": ["A1", "TASC", "EPS1", "EPS2"],
+            "optional": ["A1DOT"],
+            "optional_sets": [["EPS1DOT", "EPS2DOT"]],
+        },
+        "PB": {"required": ["PBDOT"], "optional_sets": [["M2", "SINI"]]},
+    },
+    "ELL1H": {
+        "all": {
+            "required": ["A1", "TASC", "EPS1", "EPS2", "A1DOT", "H3", "PBDOT"],
+            "optional_sets": [["EPS1DOT", "EPS2DOT"]],
+        }
+    },
+    "DD": {
+        "all": {
+            "required": ["A1" "E", "T0", "PB", "OM"],
+            "optional": ["PBDOT", "A1DOT", "OMDOT", "EDOT"],
+            "optional_sets": [["EPS1DOT", "EPS2DOT"]],
+        }
+    },
+    "DDK": {
+        "all": {
+            "required": ["A1", "E", "T0", "PB", "OM", "M2", "K96", "KOM", "KIN"],
+            "optional": ["PBDOT", "A1DOT", "OMDOT", "EDOT"],
+        }
+    },
+}
+
 
 class DataChecker:
     def __init__(self, model: pint.models.TimingModel, toas: pint.toa.TOAs):
@@ -80,6 +111,47 @@ class DataChecker:
                 return False
         return True
 
+    def check_optional_parameter(
+        self,
+        p: str,
+        raiseexcept: Optional[bool] = True,
+        require_unfrozen: Optional[bool] = True,
+    ) -> bool:
+        """
+        Check for the existence of a single optional parameter.
+        If it does not exist or has no value then nothing is done.
+        Optionally it must be unfrozen
+
+        Parameters
+        ----------
+        p : str
+            Parameter name
+        raiseexcept: bool, optional
+            Will an error raise an exception (default) or just a warning
+        require_unfrozen: bool, optional
+            Should it also be unfrozen?
+
+        Returns
+        -------
+        bool
+            True if the checks pass, False otherwise
+
+        Raises
+        ------
+        KeyError
+            If the check fails and ``raiseexcept`` is True
+        """
+        if p not in self.m.params or self.m[p].value is None:
+            return True
+        if require_unfrozen:
+            if self.m[p].frozen:
+                self.raise_or_warn(
+                    f"Parameter '{p}' found in timing model but frozen",
+                    KeyError if raiseexcept else None,
+                )
+                return False
+        return True
+
     def check_parameter_set(
         self,
         p: List[str],
@@ -111,7 +183,7 @@ class DataChecker:
         return all(
             [
                 self.check_parameter(
-                    p, raiseexcept=raiseexcept, require_unfrozen=require_unfrozen
+                    x, raiseexcept=raiseexcept, require_unfrozen=require_unfrozen
                 )
                 for x in p
             ]
@@ -204,99 +276,6 @@ class NameChecker(DataChecker):
         return value
 
 
-class ELL1Checker(DataChecker):
-    """
-    Check specific to ELL1 binaries
-
-    Require A1, TASC, EPS1, EPS2, A1DOT, unfrozen
-
-    If has PB, require PBDOT, unfrozen
-        If either of M2, SINI require both, unfrozen
-
-    If either of EPS1DOT, EPS2DOT require both, unfrozen
-    """
-
-    def check(
-        self,
-        raiseexcept: Optional[bool] = True,
-    ) -> bool:
-        """
-        Parameters
-        ----------
-        raiseexcept: bool, optional
-            Will an error raise an exception (default) or just a warning
-
-        Returns
-        -------
-        bool
-            True if the checks pass, False otherwise
-
-        Raises
-        ------
-        KeyError
-            If the check fails and ``raiseexcept`` is True
-        """
-
-        value = self.check_parameter_set(
-            ["A1", "TASC", "EPS1", "EPS2", "A1DOT"],
-            raiseexcept=raiseexcept,
-            require_unfrozen=True,
-        )
-        if "PB" in self.m.params:
-            for p in ["PBDOT"]:
-                value = value and self.check_parameter(
-                    "PBDOT", raiseexcept=raiseexcept, require_unfrozen=True
-                )
-            value = value and self.check_optional_parameter_sets(
-                ["M2", "SINI"], raiseexcept=raiseexcept, require_unfrozen=True
-            )
-        value = value and self.check_optional_parameter_sets(
-            ["EPS1DOT", "EPS2DOT"], raiseexcept=raiseexcept, require_unfrozen=True
-        )
-        return value
-
-
-class ELL1HChecker(DataChecker):
-    """
-    Check specific to ELL1H binaries
-
-    Require A1, TASC, EPS1, EPS2, A1DOT, H3, PBDOT, unfrozen
-
-    If either of EPS1DOT, EPS2DOT require both, unfrozen
-    """
-
-    def check(
-        self,
-        raiseexcept: Optional[bool] = True,
-    ) -> bool:
-        """
-        Parameters
-        ----------
-        raiseexcept: bool, optional
-            Will an error raise an exception (default) or just a warning
-
-        Returns
-        -------
-        bool
-            True if the checks pass, False otherwise
-
-        Raises
-        ------
-        KeyError
-            If the check fails and ``raiseexcept`` is True
-        """
-
-        value = self.check_parameter_set(
-            ["A1", "TASC", "EPS1", "EPS2", "A1DOT", "H3", "PBDOT"],
-            raiseexcept=raiseexcept,
-            require_unfrozen=True,
-        )
-        value = value and self.check_optional_parameter_sets(
-            ["EPS1DOT", "EPS2DOT"], raiseexcept=raiseexcept, require_unfrozen=True
-        )
-        return value
-
-
 class BinaryChecker(DataChecker):
     """
     Checker for a binary system.  Identifies appropriate subclass for each binary model and runs it.
@@ -306,14 +285,11 @@ class BinaryChecker(DataChecker):
     def __init__(self, model: pint.models.TimingModel, toas: pint.toa.TOAs):
         super().__init__(model, toas)
         if self.m.is_binary:
-            binarycheckername = f"{self.m['BINARY'].value}Checker"
-            if not binarycheckername in globals().keys():
+            if not self.m["BINARY"].value in binary_params.keys():
                 raise KeyError(
-                    f"Binary Checker '{binarycheckername}' not found: {self.m['BINARY'].value} not supported"
+                    f"Binary parameters not found: {self.m['BINARY'].value} not supported"
                 )
-            self.binaryinstancechecker = globals()[binarycheckername](model, toas)
-        else:
-            self.binaryinstancechecker = None
+            self.binary_params = binary_params[self.m["BINARY"].value]
 
     def check(self, raiseexcept: Optional[bool] = True) -> bool:
         """
@@ -335,7 +311,26 @@ class BinaryChecker(DataChecker):
 
         if not self.m.is_binary:
             return True
-        return self.binaryinstancechecker.check(raiseexcept=raiseexcept)
+
+        for k in self.binary_params:
+            if k != "all" and (k not in self.m.params or self.m[k] is None):
+                continue
+            value = self.check_parameter_set(
+                self.binary_params[k]["required"],
+                require_unfrozen=True,
+                raiseexcept=raiseexcept,
+            )
+            if "optional" in self.binary_params[k]:
+                for p in self.binary_params[k]["optional"]:
+                    value = value and self.check_optional_parameter(
+                        p, require_unfrozen=True, raiseexcept=raiseexcept
+                    )
+            if "optional_sets" in self.binary_params[k]:
+                for p in self.binary_params[k]["optional_sets"]:
+                    value = value and self.check_optional_parameter_sets(
+                        p, require_unfrozen=True, raiseexcept=raiseexcept
+                    )
+        return value
 
 
 class ParChecker(DataChecker):

@@ -5,10 +5,10 @@
 | Name  | Matches JXXXX+/-XXXX or BXXXX+/-XX | `NameChecker` | |
 | Spin  | Only has F0, F1.  No other parameters | `ParChecker` | F0,F1 in `required`, F2 in `excluded`.  PINT will not validate if e.g., F3 is present and F2 is not |
 | Astrometry | Ecliptic coordinates, including PX | `ParChecker` | PX,ELONG,ELAT,PMELONG,PMELAT in `required` |
-| Binary ELL1 | Has A1, TASC, EPS1, EPS2, PBDOT, A1DOT.  | `ELL1Checker` | One subclass per binary type | 
+| Binary ELL1 | Has A1, TASC, EPS1, EPS2, PBDOT, A1DOT.  | `BinaryChecker` | Binary-specific definitions can be supplied | 
 | Binary ELL1 | One of PB, FB0 | `PINT` | PINT will not validate if both are present | 
-| Binary ELL1 | M2, SINI both present and fittable or neither | `ELL1Checker` | |
-| Binary ELL1 | EPS1DOT, EPS2DOT both present and fittable or neither | `ELL1Checker` | |
+| Binary ELL1 | M2, SINI both present and fittable or neither | `BinaryChecker` | |
+| Binary ELL1 | EPS1DOT, EPS2DOT both present and fittable or neither | `BinaryChecker` | |
 | Ephemeris | Matches specified version | `ParChecker` | |
 | BIPM | Matches specified version | `ParChecker` | |
 | Ecliptic coordinates | Model must be in ecliptic coordinates | `ParChecker` | `pint_pal` did this twice.  It also tried to convert using a function other than `PINT` supplied.  But it didn't seem to actually return the result.  Leaving out the second check/conversion |

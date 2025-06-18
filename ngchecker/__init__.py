@@ -7,6 +7,14 @@ import pint.toa
 from loguru import logger as log
 
 # these can be set elsewhere or overridden if needed
+# format is:
+# top-level block:
+#   can be specified by ``all`` (applies to all entries)
+#   or name of parameter (and then only applies if that parameter is present)
+# within each block can specify:
+#   ``required``: list, all parameters must be present and fittable
+#   ``optional``: list, parameters may be present, but if they are must be fittable
+#   ``optional_sets``: list of lists, if any parameter in the list is present then all must be (and must be fittable)
 binary_params = {
     "ELL1": {
         "all": {

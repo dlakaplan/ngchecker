@@ -508,7 +508,7 @@ class JumpChecker(DataChecker):
             jump_or_offset[np.array(offset_indices)] = True
         jump_indices = {}
         for p in self.m.components["PhaseJump"].params:
-            jump_indices[p] = self.m[p].select_toa_mask(t)
+            jump_indices[p] = self.m[p].select_toa_mask(self.t)
             if (len(jump_indices[p]) == 0) and (not self.m[p].frozen):
                 v = " ".join(self.m[p].key_value)
                 self.raise_or_warn(

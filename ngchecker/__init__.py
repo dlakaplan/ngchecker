@@ -408,11 +408,12 @@ class ParChecker(DataChecker):
                     KeyError if raiseexcept else None,
                 )
                 return False
-        for checkername in othercheckers:
-            checker = checkername(self.m, self.t)
-            value = checker.check(raiseexcept=raiseexcept)
-            if not value:
-                return False
+        if othercheckers is not None:
+            for checkername in othercheckers:
+                checker = checkername(self.m, self.t)
+                value = checker.check(raiseexcept=raiseexcept)
+                if not value:
+                    return False
         return True
 
 

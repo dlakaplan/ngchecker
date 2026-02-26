@@ -248,7 +248,7 @@ class DataChecker:
                     f"All parameters '{p}' found in timing model but some frozen",
                     KeyError if raiseexcept else None,
                 )
-            return False
+                return False
         return True
 
 
